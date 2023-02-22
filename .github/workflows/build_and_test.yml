@@ -1,0 +1,116 @@
+name: Build and test Jsonic parser
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  Install:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v2.5.0
+        with:
+           token: ${{ secrets.WORKFLOW_TOKEN }}
+
+      - name: Setup Python 3.10
+      # TODO: WIP
+        uses: actions/setup-node@v3.5.1
+        with:
+          node-version: 10
+
+      - name: Cache node modules
+        uses: actions/cache@v3.0.11
+        with:
+          path: node_modules
+          key: node_modules-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: node_modules-
+
+      - name: Install packages with npm
+        run: |
+          npm ci
+
+  Build:
+    needs: Install
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v2.5.0
+        with:
+           token: ${{ secrets.WORKFLOW_TOKEN }}
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3.5.1
+        with:
+          node-version: 10
+
+      - name: Cache node modules
+        uses: actions/cache@v3.0.11
+        with:
+          path: node_modules
+          key: node_modules-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Build
+        run: |
+          npm rebuild node-sass --force
+          npm run build -- --colors
+
+      - name: Cache node modules and build folder
+        if: ${{ github.ref == 'refs/heads/master' }}
+        uses: actions/cache@v3.0.11
+        with:
+          path: |
+            ~/.npm
+            ./node_modules
+            ./build
+          key: ${{ runner.os }}-build-${{ github.run_id }}
+          restore-keys: ${{ runner.os }}-build-${{ github.run_id }}
+
+  Test:
+    needs: Install
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v2.5.0
+        with:
+           token: ${{ secrets.WORKFLOW_TOKEN }}
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3.5.1
+        with:
+          node-version: 10
+
+      - name: Cache node modules
+        uses: actions/cache@v3.0.11
+        with:
+          path: node_modules
+          key: node_modules-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Run tests
+        run: |
+          npm rebuild node-sass --force
+          npm run test -- --colors
+
+  Deploy:
+    needs: [Build, Test]
+    if: ${{ github.ref == 'refs/heads/master' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v2.5.0
+        with:
+          token: ${{ secrets.WORKFLOW_TOKEN }}
+
+      - name: Play ansible-playbook command with SSH Private Key
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          command: ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook ~/4IT572_ansible/ansible/ec2_deploy_full.yml --vault-password-file ~/pass.txt --user ubuntu --key-file ~/dasha.pem
+          host: ${{ secrets.HOST }}
+          username: ubuntu
+          privateKey: ${{ secrets.PRIVATE_KEY}}
+        env:
+          CI: true
