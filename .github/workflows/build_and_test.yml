@@ -1,0 +1,78 @@
+name: Build and Test Jsonic Parser
+env:
+  APPLICATION_NAME: "JsonicParser"
+  PACKAGE_NAME: "jsonic-version-${{ github.sha }}"
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  Install:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v3
+        # with:
+        #    token: ${{ secrets.WORKFLOW_TOKEN }}
+
+      - name: Install poetry && Packages
+        run: pip install poetry
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'poetry'
+      - run: |
+          POETRY_VIRTUALENVS_CREATE=false
+          poetry install
+          echo "Package version: "${{ env.PACKAGE_NAME }}
+      # - run: poetry run pytest
+
+
+  # test-python-app:
+  #   needs: Install
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - name: Code checkout
+  #       uses: actions/checkout@v2.5.0
+  #       with:
+  #          token: ${{ secrets.WORKFLOW_TOKEN }}
+
+  #     - name: Setup NodeJS
+  #       uses: actions/setup-node@v3.5.1
+  #       with:
+  #         node-version: 10
+
+  #     - name: Cache node modules
+  #       uses: actions/cache@v3.0.11
+  #       with:
+  #         path: node_modules
+  #         key: node_modules-${{ hashFiles('**/package-lock.json') }}
+
+  #     - name: Run tests
+  #       run: |
+  #         npm rebuild node-sass --force
+  #         npm run test -- --colors
+
+  # Deploy:
+  #   needs: [build-python-app, test-python-app]
+  #   if: ${{ github.ref == 'refs/heads/main' }}
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - name: Code checkout
+  #       uses: actions/checkout@v2.5.0
+  #       with:
+  #         token: ${{ secrets.WORKFLOW_TOKEN }}
+
+  #     - name: Play ansible-playbook command with SSH Private Key
+  #       uses: garygrossgarten/github-action-ssh@release
+  #       with:
+  #         command: ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook ~/4IT572_ansible/ansible/ec2_deploy_full.yml --vault-password-file ~/pass.txt --user ubuntu --key-file ~/dasha.pem
+  #         host: ${{ secrets.HOST }}
+  #         username: ubuntu
+  #         privateKey: ${{ secrets.PRIVATE_KEY}}
+  #       env:
+  #         CI: true
