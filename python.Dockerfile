@@ -15,8 +15,6 @@ RUN : \
 
 # To COPY the remote files at working directory in container
 COPY ./api /opt/app/api
-COPY ./poetry.lock /opt/app
-COPY ./pyproject.toml /opt/app
 
 # Now the structure looks like this '/opt/app/app.py'
 CMD ["python", "api/app.py"]
