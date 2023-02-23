@@ -1,4 +1,7 @@
-name: Build and test Jsonic parser
+name: Build and Test Jsonic Parser
+env:
+  APPLICATION_NAME: "JsonicParser"
+  PACKAGE_NAME: "jsonic-version-${{ github.sha }}"
 
 on:
   workflow_dispatch:
@@ -10,107 +13,102 @@ jobs:
 
     steps:
       - name: Code checkout
-        uses: actions/checkout@v2.5.0
+        uses: actions/checkout@v3
+        # with:
+        #    token: ${{ secrets.WORKFLOW_TOKEN }}
+
+      - name: Install poetry && Packages
+        run: pip install poetry
+      - uses: actions/setup-python@v4
         with:
-           token: ${{ secrets.WORKFLOW_TOKEN }}
+          python-version: '3.10'
+          cache: 'poetry'
+      - run: |
+          POETRY_VIRTUALENVS_CREATE=false
+          poetry install
+          echo "Package version: "${{ env.PACKAGE_NAME }}
+      # - run: poetry run pytest
 
-      - name: Setup Python 3.10
-      # TODO: WIP
-        uses: actions/setup-node@v3.5.1
-        with:
-          node-version: 10
+  # build-python-app:
+  #   needs: Install
+  #   runs-on: ubuntu-latest
 
-      - name: Cache node modules
-        uses: actions/cache@v3.0.11
-        with:
-          path: node_modules
-          key: node_modules-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: node_modules-
+  #   steps:
+  #     - name: Code checkout
+  #       uses: actions/checkout@v2.5.0
+  #       with:
+  #          token: ${{ secrets.WORKFLOW_TOKEN }}
 
-      - name: Install packages with npm
-        run: |
-          npm ci
+  #     - name: Setup NodeJS
+  #       uses: actions/setup-node@v3.5.1
+  #       with:
+  #         node-version: 10
 
-  Build:
-    needs: Install
-    runs-on: ubuntu-latest
+  #     - name: Cache node modules
+  #       uses: actions/cache@v3.0.11
+  #       with:
+  #         path: node_modules
+  #         key: node_modules-${{ hashFiles('**/package-lock.json') }}
 
-    steps:
-      - name: Code checkout
-        uses: actions/checkout@v2.5.0
-        with:
-           token: ${{ secrets.WORKFLOW_TOKEN }}
+  #     - name: Build
+  #       run: |
+  #         npm rebuild node-sass --force
+  #         npm run build -- --colors
 
-      - name: Setup NodeJS
-        uses: actions/setup-node@v3.5.1
-        with:
-          node-version: 10
+  #     - name: Cache node modules and build folder
+  #       if: ${{ github.ref == 'refs/heads/master' }}
+  #       uses: actions/cache@v3.0.11
+  #       with:
+  #         path: |
+  #           ~/.npm
+  #           ./node_modules
+  #           ./build
+  #         key: ${{ runner.os }}-build-${{ github.run_id }}
+  #         restore-keys: ${{ runner.os }}-build-${{ github.run_id }}
 
-      - name: Cache node modules
-        uses: actions/cache@v3.0.11
-        with:
-          path: node_modules
-          key: node_modules-${{ hashFiles('**/package-lock.json') }}
+  # test-python-app:
+  #   needs: Install
+  #   runs-on: ubuntu-latest
 
-      - name: Build
-        run: |
-          npm rebuild node-sass --force
-          npm run build -- --colors
+  #   steps:
+  #     - name: Code checkout
+  #       uses: actions/checkout@v2.5.0
+  #       with:
+  #          token: ${{ secrets.WORKFLOW_TOKEN }}
 
-      - name: Cache node modules and build folder
-        if: ${{ github.ref == 'refs/heads/master' }}
-        uses: actions/cache@v3.0.11
-        with:
-          path: |
-            ~/.npm
-            ./node_modules
-            ./build
-          key: ${{ runner.os }}-build-${{ github.run_id }}
-          restore-keys: ${{ runner.os }}-build-${{ github.run_id }}
+  #     - name: Setup NodeJS
+  #       uses: actions/setup-node@v3.5.1
+  #       with:
+  #         node-version: 10
 
-  Test:
-    needs: Install
-    runs-on: ubuntu-latest
+  #     - name: Cache node modules
+  #       uses: actions/cache@v3.0.11
+  #       with:
+  #         path: node_modules
+  #         key: node_modules-${{ hashFiles('**/package-lock.json') }}
 
-    steps:
-      - name: Code checkout
-        uses: actions/checkout@v2.5.0
-        with:
-           token: ${{ secrets.WORKFLOW_TOKEN }}
+  #     - name: Run tests
+  #       run: |
+  #         npm rebuild node-sass --force
+  #         npm run test -- --colors
 
-      - name: Setup NodeJS
-        uses: actions/setup-node@v3.5.1
-        with:
-          node-version: 10
+  # Deploy:
+  #   needs: [build-python-app, test-python-app]
+  #   if: ${{ github.ref == 'refs/heads/master' }}
+  #   runs-on: ubuntu-latest
 
-      - name: Cache node modules
-        uses: actions/cache@v3.0.11
-        with:
-          path: node_modules
-          key: node_modules-${{ hashFiles('**/package-lock.json') }}
+  #   steps:
+  #     - name: Code checkout
+  #       uses: actions/checkout@v2.5.0
+  #       with:
+  #         token: ${{ secrets.WORKFLOW_TOKEN }}
 
-      - name: Run tests
-        run: |
-          npm rebuild node-sass --force
-          npm run test -- --colors
-
-  Deploy:
-    needs: [Build, Test]
-    if: ${{ github.ref == 'refs/heads/master' }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Code checkout
-        uses: actions/checkout@v2.5.0
-        with:
-          token: ${{ secrets.WORKFLOW_TOKEN }}
-
-      - name: Play ansible-playbook command with SSH Private Key
-        uses: garygrossgarten/github-action-ssh@release
-        with:
-          command: ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook ~/4IT572_ansible/ansible/ec2_deploy_full.yml --vault-password-file ~/pass.txt --user ubuntu --key-file ~/dasha.pem
-          host: ${{ secrets.HOST }}
-          username: ubuntu
-          privateKey: ${{ secrets.PRIVATE_KEY}}
-        env:
-          CI: true
+  #     - name: Play ansible-playbook command with SSH Private Key
+  #       uses: garygrossgarten/github-action-ssh@release
+  #       with:
+  #         command: ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook ~/4IT572_ansible/ansible/ec2_deploy_full.yml --vault-password-file ~/pass.txt --user ubuntu --key-file ~/dasha.pem
+  #         host: ${{ secrets.HOST }}
+  #         username: ubuntu
+  #         privateKey: ${{ secrets.PRIVATE_KEY}}
+  #       env:
+  #         CI: true
