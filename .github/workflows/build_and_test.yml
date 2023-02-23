@@ -29,42 +29,6 @@ jobs:
           echo "Package version: "${{ env.PACKAGE_NAME }}
       # - run: poetry run pytest
 
-  # build-python-app:
-  #   needs: Install
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #     - name: Code checkout
-  #       uses: actions/checkout@v2.5.0
-  #       with:
-  #          token: ${{ secrets.WORKFLOW_TOKEN }}
-
-  #     - name: Setup NodeJS
-  #       uses: actions/setup-node@v3.5.1
-  #       with:
-  #         node-version: 10
-
-  #     - name: Cache node modules
-  #       uses: actions/cache@v3.0.11
-  #       with:
-  #         path: node_modules
-  #         key: node_modules-${{ hashFiles('**/package-lock.json') }}
-
-  #     - name: Build
-  #       run: |
-  #         npm rebuild node-sass --force
-  #         npm run build -- --colors
-
-  #     - name: Cache node modules and build folder
-  #       if: ${{ github.ref == 'refs/heads/master' }}
-  #       uses: actions/cache@v3.0.11
-  #       with:
-  #         path: |
-  #           ~/.npm
-  #           ./node_modules
-  #           ./build
-  #         key: ${{ runner.os }}-build-${{ github.run_id }}
-  #         restore-keys: ${{ runner.os }}-build-${{ github.run_id }}
 
   # test-python-app:
   #   needs: Install
@@ -94,7 +58,7 @@ jobs:
 
   # Deploy:
   #   needs: [build-python-app, test-python-app]
-  #   if: ${{ github.ref == 'refs/heads/master' }}
+  #   if: ${{ github.ref == 'refs/heads/main' }}
   #   runs-on: ubuntu-latest
 
   #   steps:
