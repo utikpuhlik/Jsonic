@@ -64,6 +64,7 @@ jobs:
       - name: Play ansible-playbook command with SSH Private Key
         uses: garygrossgarten/github-action-ssh@release
         with:
+          # TODO: re-write row below due to unreadable
           command: ansible-playbook -i ~/ansible/host.ini ~/ansible/jsonic_deploy.yml --vault-password-file ~/ansible/vault_pass.txt
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
