@@ -6,6 +6,8 @@ env:
 on:
   workflow_dispatch:
   push:
+    branches:
+      - "main"
 
 jobs:
   Install:
@@ -14,8 +16,9 @@ jobs:
     steps:
       - name: Code checkout
         uses: actions/checkout@v3
-        # with:
-        #    token: ${{ secrets.WORKFLOW_TOKEN }}
+        ### Only for PRIVATE Repos ###
+        with:
+           token: ${{ secrets.WORKFLOW_TOKEN }}
 
       - name: Install poetry && Packages
         run: pip install poetry
@@ -27,7 +30,7 @@ jobs:
           POETRY_VIRTUALENVS_CREATE=false
           poetry install
           echo "Package version: "${{ env.PACKAGE_NAME }}
-      # - run: poetry run pytest
+      # TODO: - run: poetry run pytest
 
 
   # test-python-app:
@@ -36,43 +39,35 @@ jobs:
 
   #   steps:
   #     - name: Code checkout
-  #       uses: actions/checkout@v2.5.0
+  #       uses: actions/checkout@v3
   #       with:
   #          token: ${{ secrets.WORKFLOW_TOKEN }}
-
-  #     - name: Setup NodeJS
-  #       uses: actions/setup-node@v3.5.1
-  #       with:
-  #         node-version: 10
-
-  #     - name: Cache node modules
-  #       uses: actions/cache@v3.0.11
-  #       with:
-  #         path: node_modules
-  #         key: node_modules-${{ hashFiles('**/package-lock.json') }}
 
   #     - name: Run tests
   #       run: |
   #         npm rebuild node-sass --force
   #         npm run test -- --colors
 
-  # Deploy:
-  #   needs: [build-python-app, test-python-app]
-  #   if: ${{ github.ref == 'refs/heads/main' }}
-  #   runs-on: ubuntu-latest
+  Deploy:
+    # TODO: needs: [Install, test-python-app]
+    needs: [Install]
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #     - name: Code checkout
-  #       uses: actions/checkout@v2.5.0
-  #       with:
-  #         token: ${{ secrets.WORKFLOW_TOKEN }}
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v3
+        ### Only for PRIVATE Repos ###
+        with:
+          token: ${{ secrets.WORKFLOW_TOKEN }}
 
-  #     - name: Play ansible-playbook command with SSH Private Key
-  #       uses: garygrossgarten/github-action-ssh@release
-  #       with:
-  #         command: ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook ~/4IT572_ansible/ansible/ec2_deploy_full.yml --vault-password-file ~/pass.txt --user ubuntu --key-file ~/dasha.pem
-  #         host: ${{ secrets.HOST }}
-  #         username: ubuntu
-  #         privateKey: ${{ secrets.PRIVATE_KEY}}
-  #       env:
-  #         CI: true
+      - name: Play ansible-playbook command with SSH Private Key
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          # TODO: re-write row below due to unreadable
+          command: ansible-playbook -i ~/ansible/host.ini ~/ansible/jsonic_deploy.yml --vault-password-file ~/ansible/vault_pass.txt
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          privateKey: ${{ secrets.PRIVATE_KEY }}
+        env:
+          CI: true
