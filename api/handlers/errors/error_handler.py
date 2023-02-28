@@ -6,7 +6,7 @@ from aiogram.utils.exceptions import (TelegramAPIError,
 
 from loader import dp
 
-
+#
 @dp.errors_handler()
 async def errors_handler(update, exception):
     """
