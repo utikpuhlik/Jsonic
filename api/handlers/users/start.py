@@ -10,7 +10,7 @@ from loader import dp
 @dp.message_handler(CommandStart(), state="*")
 async def bot_start(message: types.Message, state: FSMContext):
     await message.answer("Hi!\nWork in progress now")
-    await message.reply(f"Your telegram is {message.from_user.id}")
+    await message.reply(f"Your telegram is {message.from_user.id}. Hi :)")
 
 
 @dp.message_handler(
