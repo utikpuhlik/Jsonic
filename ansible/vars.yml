@@ -1,0 +1,4 @@
+container_name: jsonic_bot
+app_path: ~/jsonic
+repo: https://github.com/utikpuhlik/Jsonic.git
+ansible_python_interpreter: /usr/bin/python3
