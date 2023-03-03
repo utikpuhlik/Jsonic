@@ -22,11 +22,13 @@ jobs:
           python-version: '3.10'
           cache: 'poetry'
       - run: |
+          POETRY_VIRTUALENVS_CREATE=false
           poetry install
           echo "Package version: "${{ env.PACKAGE_NAME }}
 
       - name: Run pre-commit checks
         run: |
+          poetry shell
           pre-commit run --all-files --show-diff-on-failure
       - name: Check if files were modified
         id: check_diff
