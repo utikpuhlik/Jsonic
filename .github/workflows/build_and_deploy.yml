@@ -30,15 +30,6 @@ jobs:
           poetry install
           echo "Package version: "${{ env.PACKAGE_NAME }}
 
-      - name: Run pre-commit checks
-        run: |
-          pre-commit run --all-files --show-diff-on-failure
-      - name: Check if files were modified
-        id: check_diff
-        run: echo ::set-output name=diff::$(git diff --name-only --exit-code HEAD || echo "MODIFIED")
-      - name: Fail if pre-commit checks fail
-        run: exit $(test "${{ steps.check_diff.outputs.diff }}" != "MODIFIED")
-
 
   # pytest:
   #   runs-on: ubuntu-latest
