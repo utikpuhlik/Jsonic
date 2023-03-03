@@ -1,4 +1,4 @@
-name: Test Pull Request
+name: Python Code Analysis
 
 on:
   pull_request:
@@ -6,4 +6,61 @@ on:
       - main
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v3
+        ### Only for PRIVATE Repos ###
+        with:
+           token: ${{ secrets.WORKFLOW_TOKEN }}
 
+      - name: Install poetry && Dependencies
+        run: pip install poetry
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'poetry'
+      - run: |
+          POETRY_VIRTUALENVS_CREATE=false
+          poetry install
+          echo "Package version: "${{ env.PACKAGE_NAME }}
+
+      - name: Run pre-commit checks
+        run: |
+          pre-commit run --all-files --show-diff-on-failure
+      - name: Check if files were modified
+        id: check_diff
+        run: echo ::set-output name=diff::$(git diff --name-only --exit-code HEAD || echo "MODIFIED")
+      - name: Fail if pre-commit checks fail
+        run: exit $(test "${{ steps.check_diff.outputs.diff }}" != "MODIFIED")
+
+  # pytest:
+  #   runs-on: ubuntu-latest
+  #   needs: pre-commit
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+
+  #     - name: Install dependencies
+  #       run: pip install poetry
+  #     - uses: actions/setup-python@v4
+  #       with:
+  #         python-version: '3.10'
+  #         cache: 'poetry'
+  #     - run: |
+  #         POETRY_VIRTUALENVS_CREATE=false
+  #         poetry install
+  #     - name: Run tests
+  #       run: pytest tests/
+
+  ### USELESS ??? ###
+  # merge:
+  #   runs-on: ubuntu-latest
+  #   # needs: [pytest, pre-commit]
+  #   needs: [pre-commit]
+  #   if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+  #     - name: Merge pull request
