@@ -12,7 +12,6 @@ on:
 jobs:
   Install:
     runs-on: ubuntu-latest
-
     steps:
       - name: Code checkout
         uses: actions/checkout@v3
@@ -20,7 +19,7 @@ jobs:
         with:
            token: ${{ secrets.WORKFLOW_TOKEN }}
 
-      - name: Install poetry && Packages
+      - name: Install poetry && Dependencies
         run: pip install poetry
       - uses: actions/setup-python@v4
         with:
@@ -30,23 +29,35 @@ jobs:
           POETRY_VIRTUALENVS_CREATE=false
           poetry install
           echo "Package version: "${{ env.PACKAGE_NAME }}
-      # TODO: - run: poetry run pytest
+
+      - name: Run pre-commit checks
+        run: |
+          pre-commit run --all-files --show-diff-on-failure
+      - name: Check if files were modified
+        id: check_diff
+        run: echo ::set-output name=diff::$(git diff --name-only --exit-code HEAD || echo "MODIFIED")
+      - name: Fail if pre-commit checks fail
+        run: exit $(test "${{ steps.check_diff.outputs.diff }}" != "MODIFIED")
 
 
-  # test-python-app:
-  #   needs: Install
+  # pytest:
   #   runs-on: ubuntu-latest
-
+  #   needs: pre-commit
   #   steps:
-  #     - name: Code checkout
+  #     - name: Checkout code
   #       uses: actions/checkout@v3
-  #       with:
-  #          token: ${{ secrets.WORKFLOW_TOKEN }}
 
+  #     - name: Install dependencies
+  #       run: pip install poetry
+  #     - uses: actions/setup-python@v4
+  #       with:
+  #         python-version: '3.10'
+  #         cache: 'poetry'
+  #     - run: |
+  #         POETRY_VIRTUALENVS_CREATE=false
+  #         poetry install
   #     - name: Run tests
-  #       run: |
-  #         npm rebuild node-sass --force
-  #         npm run test -- --colors
+  #       run: pytest tests/
 
   Deploy:
     # TODO: needs: [Install, test-python-app]
