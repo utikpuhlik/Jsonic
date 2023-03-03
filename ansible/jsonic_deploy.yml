@@ -15,7 +15,7 @@
           apt:
             name: aptitude
             state: latest
-            update_cache: true
+            update_cache: true  
 
         - name: Install required packages
           apt:
