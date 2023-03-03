@@ -16,10 +16,10 @@ async def mailing(message: types.Message):
 
 
 @dp.message_handler(state=Mailing.Text)
-async def mailing(message: types.Message, state: FSMContext):
+async def start_mailing(message: types.Message, state: FSMContext):
     text = message.text
     if text == "exit":
-        await message.answer(f"Вы покинули меню рассылки")
+        await message.answer("Вы покинули меню рассылки")
         await state.finish()
     else:
         await message.answer(

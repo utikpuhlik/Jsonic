@@ -1,0 +1,166 @@
+---
+- name: Jsonic Deploy AWS (Python && Docker && Compose && Deploy)
+  hosts: aws
+
+  # Define the name of your app, repo and path
+  # vars:
+  #   container_name: jsonic_bot
+  #   app_path: ~/jsonic
+  #   repo: https://github.com/utikpuhlik/Jsonic.git
+
+  tasks:
+    - name: Install required system packages
+      block:
+        - name: Install aptitude
+          apt:
+            name: aptitude
+            state: latest
+            update_cache: true
+
+        - name: Install required packages
+          apt:
+            pkg:
+              - apt-transport-https
+              - ca-certificates
+              - curl
+              - software-properties-common
+              - python3-pip
+              - virtualenv
+              - python3-setuptools
+              - gnupg
+              - lsb-release
+            state: latest
+            update_cache: true
+          vars:
+            ansible_python_interpreter: /usr/bin/python3
+
+        - name: Install ansible-required pip-packages
+          pip:
+            name:
+              - boto3
+              - botocore
+              - docker
+            executable: pip3
+            state: present
+
+      become: true
+
+
+    - name: Installing Docker
+      block:
+        - name: Add Docker GPG key
+          apt_key:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            state: present
+
+        - name: Add Docker repository
+          apt_repository:
+            repo: >
+              deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+            state: present
+
+        - name: Install Docker
+          apt:
+            name: docker-ce
+            state: latest
+            update_cache: true
+
+        - name: Just force systemd to reread configs
+          ansible.builtin.systemd:
+            daemon_reload: yes
+
+        - name: Checking Docker is Installed and Reloaded
+          service:
+            name: docker
+            state: restarted
+            enabled: true
+
+      become: true
+
+    - name: Install Docker-compose
+      block:
+        - name: Get the last version of Docker-compose
+          uri:
+            url: https://api.github.com/repos/docker/compose/releases/latest
+            body_format: json
+          register: page
+
+        - name: Install docker-compose
+          get_url:
+            url: https://github.com/docker/compose/releases//download/{{ page.json.tag_name }}/docker-compose-Linux-x86_64
+            dest: /usr/local/bin/docker-compose
+            mode: '755'
+
+        - name: Verify Docker Compose installation
+          command: docker-compose --version
+      become: true
+
+    - name: Finish of Docker installation
+      block:
+        - name: Add user to Docker group
+          user:
+            name: ubuntu
+            groups: docker
+            append: true
+
+        - name: Start Docker on startup
+          shell: systemctl enable docker
+
+      #   - name: Reboot
+      #     reboot:
+      become: true
+
+    - name: Remove old version of the app
+      block:
+        - name: Remove old version of the app
+          file:
+            path: "{{ app_path }}"
+            state: absent
+
+
+    - name: Launch Application
+      block:
+        - name: Get project files from GIT
+          git:
+            repo: "{{ repo }}"
+            dest: "{{ app_path }}"
+
+          # https://www.middlewareinventory.com/blog/ansible-aws_s3-example/#Ansible_S3_GET_Download_Object_Single_File
+        - name: Download encrypted .env file from S3
+          amazon.aws.aws_s3:
+            bucket: jsonic-bot-env
+            mode: get
+            object: ".env"
+            dest: "{{ app_path }}/api/.env"
+            aws_access_key: "{{ aws_access_key }}"
+            aws_secret_key: "{{ aws_secret_key }}"
+          register: get_result
+
+        - debug:
+            msg="{{ get_result.msg }}"
+          when: get_result.changed
+
+        - name: Build docker image
+          shell: cd jsonic && docker build -f ./python.Dockerfile -t jsonic:latest .
+
+        - name: Stop and Remove container
+          docker_container:
+            name: "{{ container_name }}"
+            state: absent
+
+        - name: Run Jsonic
+          # TODO: Docker Compose
+          # shell: docker-compose up -d
+          shell: docker run --name "{{ container_name }}" -d jsonic:latest
+        #   async: 45
+        #   poll: 0
+        # - wait_for:
+        #     port:
+        #       80
+
+    - name: Finish. Prune danglings images and containers
+      community.docker.docker_prune:
+        containers: true
+        images: true
+
+
