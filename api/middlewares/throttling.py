@@ -32,7 +32,7 @@ class ThrottlingMiddleware(BaseMiddleware):
         try:
             await dispatcher.throttle(key, rate=limit)
         except Throttled as t:
-            await message.answer(f'{t}, pausing..')
+            await message.answer(f"{t}, pausing..")
             # await sleep(1.0)
             await self.message_throttled(message, t)
             raise CancelHandler()
