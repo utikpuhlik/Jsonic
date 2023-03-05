@@ -44,7 +44,7 @@
             state: present
 
       become: true
-      tag: docker-config
+      tags: docker-config
 
 
     - name: Installing Docker
@@ -77,7 +77,7 @@
             enabled: true
 
       become: true
-      tag: docker-config
+      tags: docker-config
 
     - name: Install Docker-compose
       block:
@@ -89,14 +89,14 @@
 
         - name: Install docker-compose
           get_url:
-            url: https://github.com/docker/compose/releases//download/{{ page.json.tag_name }}/docker-compose-Linux-x86_64
+            url: https://github.com/docker/compose/releases//download/{{ page.json.tags_name }}/docker-compose-Linux-x86_64
             dest: /usr/local/bin/docker-compose
             mode: '755'
 
         - name: Verify Docker Compose installation
           command: docker-compose --version
       become: true
-      tag: docker-config
+      tags: docker-config
 
     - name: Finish of Docker installation
       block:
@@ -112,7 +112,7 @@
       #   - name: Reboot
       #     reboot:
       become: true
-      tag: docker-config
+      tags: docker-config
 
     - name: Remove old version of the app
       block:
@@ -120,7 +120,7 @@
           file:
             path: "{{ app_path }}"
             state: absent
-      tag: deploy
+      tags: deploy
 
 
     - name: Launch Application
@@ -145,27 +145,17 @@
             msg="{{ get_result.msg }}"
           when: get_result.changed
 
-        - name: Build docker image
-          shell: cd jsonic && docker build -f ./python.Dockerfile -t jsonic:latest .
-
-        - name: Stop and Remove container
-          docker_container:
-            name: "{{ container_name }}"
-            state: absent
-
-        - name: Run Jsonic
-          # TODO: Docker Compose
-          # shell: docker-compose up -d
-          shell: docker run --name "{{ container_name }}" -d jsonic:latest
+        - name: Rebuild Application
+          shell: cd jsonic && docker-compose up --build -d
         #   async: 45
         #   poll: 0
         # - wait_for:
         #     port:
         #       80
-      tag: deploy
+      tags: deploy
 
     - name: Finish. Prune danglings images and containers
       community.docker.docker_prune:
         containers: true
         images: true
-      tag: deploy
+      tags: deploy
