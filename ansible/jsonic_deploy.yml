@@ -44,6 +44,7 @@
             state: present
 
       become: true
+      tag: docker-config
 
 
     - name: Installing Docker
@@ -76,6 +77,7 @@
             enabled: true
 
       become: true
+      tag: docker-config
 
     - name: Install Docker-compose
       block:
@@ -94,6 +96,7 @@
         - name: Verify Docker Compose installation
           command: docker-compose --version
       become: true
+      tag: docker-config
 
     - name: Finish of Docker installation
       block:
@@ -109,6 +112,7 @@
       #   - name: Reboot
       #     reboot:
       become: true
+      tag: docker-config
 
     - name: Remove old version of the app
       block:
@@ -116,6 +120,7 @@
           file:
             path: "{{ app_path }}"
             state: absent
+      tag: deploy
 
 
     - name: Launch Application
@@ -157,8 +162,10 @@
         # - wait_for:
         #     port:
         #       80
+      tag: deploy
 
     - name: Finish. Prune danglings images and containers
       community.docker.docker_prune:
         containers: true
         images: true
+      tag: deploy

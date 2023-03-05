@@ -2,7 +2,7 @@ FROM python:3.10
 
 WORKDIR /opt/app
 
-ADD pyproject.toml /opt/app
+ADD pyproject.toml ./
 
 # Poetry
 ENV PATH="${PATH}:/root/.poetry/bin"
@@ -14,7 +14,7 @@ RUN : \
 && :
 
 # To COPY the remote files at working directory in container
-COPY ./api /opt/app/api
+COPY . .
 
 # Now the structure looks like this '/opt/app/app.py'
-CMD ["python", "api/app.py"]
+CMD ["python", "./api/app.py"]
